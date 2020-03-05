@@ -6,6 +6,9 @@ package brymck.risk.v1;
 service RiskAPI {
     // Get risk
     rpc GetRisk (GetRiskRequest) returns (GetRiskResponse);
+
+    // Get covariances
+    rpc GetCovariances (GetCovariancesRequest) returns (GetCovariancesResponse);
 }
 
 message GetRiskRequest {
@@ -14,4 +17,20 @@ message GetRiskRequest {
 
 message GetRiskResponse {
     double risk = 1;
+}
+
+message GetCovariancesRequest {
+    repeated uint64 securityIds = 1;
+}
+
+message GetCovariancesResponse {
+    repeated CovariancePair covariances = 1;
+}
+
+message CovariancePair {
+    uint64 securityId1 = 1;
+
+    uint64 securityId2 = 2;
+
+    double covariance = 3;
 }
