@@ -51,10 +51,16 @@ func isExpired(token string) bool {
 		return true
 	}
 	expiry := time.Unix(jt.ExpiresAt, 0)
-	thirtySecondsFromNow := time.Now().Add(30 * time.Second)
+	now := time.Now()
+	thirtySecondsFromNow := now.Add(30 * time.Second)
 	if expiry.Before(thirtySecondsFromNow) {
+		log.Info("token is expired")
 		return true
 	}
+	seconds := int(expiry.Sub(now).Seconds())
+	minutes := seconds / 60
+	seconds = seconds - 60 * minutes
+	log.Infof("token is valid for the next %d minutes and %d seconds", minutes, seconds)
 	return false
 }
 
