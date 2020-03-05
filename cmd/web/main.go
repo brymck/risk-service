@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/brymck/helpers/servers"
+	log "github.com/sirupsen/logrus"
 
 	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
 	sec "github.com/brymck/risk-service/genproto/brymck/securities/v1"
@@ -49,7 +50,7 @@ func calculateReturns(xs []float64) []float64 {
 	prev := xs[0]
 	for i := 1; i < count; i++ {
 		x := xs[i]
-		results[i-1] = x / prev
+		results[i-1] = x/prev - 1.0
 	}
 	return results
 }
@@ -135,6 +136,7 @@ func normalizeTimeSeries(entries []*sec.Price, start time.Time, end time.Time) [
 			if i > count {
 				results = append(results, entries[count-1].Price)
 			} else {
+			loop:
 				for {
 					entry := entries[i]
 					result := compareDates(entry.Date, year, month, day)
@@ -142,14 +144,14 @@ func normalizeTimeSeries(entries []*sec.Price, start time.Time, end time.Time) [
 					case Equal:
 						results = append(results, entry.Price)
 						i++
-						break
+						break loop
 					case Before:
 						i++
 						if i > count {
-							break
+							break loop
 						}
 					case After:
-						break
+						break loop
 					}
 				}
 			}
@@ -181,20 +183,22 @@ func latestBusinessDate() time.Time {
 func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk.GetRiskResponse, error) {
 	end := latestBusinessDate()
 	start := end.AddDate(-1, 0, 0)
+	log.Infof("getting prices for %d", in.SecurityId)
 	entries, err := getPrices(ctx, in.SecurityId, &start, &end)
 	if err != nil {
 		return nil, err
 	}
 
+	log.Infof("normalizing time series for %d from %s to %s", in.SecurityId, start, end)
 	normalized := normalizeTimeSeries(entries, start, end)
 
-	count := 0
+	log.Info("calculating variance of normalized time series")
+	count := len(normalized)
 	sumOfSquares := 0.0
 	previousPrice := 0.0
 	for _, price := range normalized {
 		if previousPrice != 0.0 {
 			sumOfSquares += math.Pow(price/previousPrice-1.0, 2.0)
-			count++
 		}
 		previousPrice = price
 	}
