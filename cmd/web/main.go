@@ -213,7 +213,7 @@ func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk
 	normalized := normalizeTimeSeries(entries, start, end)
 
 	count := len(normalized)
-	log.Info("calculating variance of %d normalized time series entries", count)
+	log.Infof("calculating variance of %d normalized time series entries", count)
 	sumOfSquares := 0.0
 	previousPrice := 0.0
 	for _, price := range normalized {
