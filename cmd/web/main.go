@@ -66,13 +66,22 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 	securityIds := in.SecurityIds
 	timeSeries := make(map[uint64][]float64, len(securityIds))
 	for _, securityId := range securityIds {
+		log.Infof("getting prices for %d", securityId)
 		entries, err := getPrices(ctx, securityId, &start, &end)
 		if err != nil {
 			return nil, err
 		}
+		log.Infof(
+			"normalizing %d time series entries for %d from %s to %s",
+			len(entries),
+			securityId,
+			isoDate(&start),
+			isoDate(&end),
+		)
 		timeSeries[securityId] = calculateReturns(normalizeTimeSeries(entries, start, end))
 	}
 
+	log.Info("calculating covariances")
 	var pairs []*rk.CovariancePair
 	count := len(in.SecurityIds)
 	for i := 0; i < count; i++ {
@@ -85,6 +94,7 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 		}
 	}
 
+	log.Info("responding with %d covariance pairs", len(pairs))
 	return &rk.GetCovariancesResponse{Covariances: pairs}, nil
 }
 
