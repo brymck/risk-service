@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"os"
 
@@ -31,7 +32,13 @@ func (tokenAuth) RequireTransportSecurity() bool {
 }
 
 func isOnCloudRun() bool {
-	return os.Getenv("K_SERVICE") != ""
+	if os.Getenv("K_SERVICE") == "" {
+		log.Info("not running on Cloud Run because environment variable K_SERVICE is not set")
+		return false
+	} else {
+		log.Info("running on Cloud Run because environment variable K_SERVICE is set")
+		return true
+	}
 }
 
 func getGrpcClientConnection(addr string) (*grpc.ClientConn, error) {
@@ -41,13 +48,18 @@ func getGrpcClientConnection(addr string) (*grpc.ClientConn, error) {
 	var token string
 	var err error
 	if isOnCloudRun() {
+		log.Info("retrieving token from metadata server")
 		tokenUrl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", addr)
 		token, err = metadata.Get(tokenUrl)
 		if err != nil {
 			return nil, fmt.Errorf("metadata.Get: failed to query id_token: %+v", err)
 		}
 	} else {
+		log.Info("retrieving token from BRYMCK_ID_TOKEN environment variable")
 		token = os.Getenv("BRYMCK_ID_TOKEN")
+	}
+	if token == "" {
+		return nil, errors.New("token not set")
 	}
 
 	conn, err := grpc.Dial(
