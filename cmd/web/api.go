@@ -18,12 +18,30 @@ import (
 var securitiesApi sec.SecuritiesAPIClient
 
 type tokenAuth struct {
-	token string
+	serviceName string
 }
 
 func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
+	var token string
+	var err error
+	if isOnCloudRun() {
+		log.Info("retrieving token from metadata server")
+		serviceUrl := getServiceUrl(t.serviceName)
+		tokenUrl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", serviceUrl)
+		token, err = metadata.Get(tokenUrl)
+		if err != nil {
+			return nil, fmt.Errorf("metadata.Get: failed to query id_token: %+v", err)
+		}
+	} else {
+		log.Info("retrieving token from BRYMCK_ID_TOKEN environment variable")
+		token = os.Getenv("BRYMCK_ID_TOKEN")
+	}
+	if token == "" {
+		return nil, errors.New("token not set")
+	}
+
 	return map[string]string{
-		"authorization": fmt.Sprintf("Bearer %s", t.token),
+		"authorization": fmt.Sprintf("Bearer %s", token),
 	}, nil
 }
 
@@ -53,28 +71,10 @@ func getGrpcClientConnection(serviceName string) (*grpc.ClientConn, error) {
 	pool, _ := x509.SystemCertPool()
 	ce := credentials.NewClientTLSFromCert(pool, "")
 
-	var token string
-	var err error
-	if isOnCloudRun() {
-		log.Info("retrieving token from metadata server")
-		serviceUrl := getServiceUrl(serviceName)
-		tokenUrl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", serviceUrl)
-		token, err = metadata.Get(tokenUrl)
-		if err != nil {
-			return nil, fmt.Errorf("metadata.Get: failed to query id_token: %+v", err)
-		}
-	} else {
-		log.Info("retrieving token from BRYMCK_ID_TOKEN environment variable")
-		token = os.Getenv("BRYMCK_ID_TOKEN")
-	}
-	if token == "" {
-		return nil, errors.New("token not set")
-	}
-
 	conn, err := grpc.Dial(
 		getServiceAddress(serviceName),
 		grpc.WithTransportCredentials(ce),
-		grpc.WithPerRPCCredentials(tokenAuth{token: token}),
+		grpc.WithPerRPCCredentials(tokenAuth{serviceName: serviceName}),
 	)
 	if err != nil {
 		return nil, err
