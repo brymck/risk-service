@@ -133,7 +133,7 @@ func normalizeTimeSeries(entries []*sec.Price, start time.Time, end time.Time) [
 		weekday := d.Weekday()
 		if d == start || (weekday != time.Saturday && weekday != time.Sunday) {
 			year, month, day := d.Date()
-			if i > count {
+			if i >= count {
 				results = append(results, entries[count-1].Price)
 			} else {
 			loop:
@@ -147,7 +147,7 @@ func normalizeTimeSeries(entries []*sec.Price, start time.Time, end time.Time) [
 						break loop
 					case Before:
 						i++
-						if i > count {
+						if i >= count {
 							break loop
 						}
 					case After:
