@@ -41,7 +41,15 @@ func isOnCloudRun() bool {
 	}
 }
 
-func getGrpcClientConnection(addr string) (*grpc.ClientConn, error) {
+func getServiceAddress(serviceName string) string {
+	return fmt.Sprintf("%s-4tt23pryoq-an.a.run.app:443", serviceName)
+}
+
+func getServiceUrl(serviceName string) string {
+	return fmt.Sprintf("%s-4tt23pryoq-an.a.run.app", serviceName)
+}
+
+func getGrpcClientConnection(serviceName string) (*grpc.ClientConn, error) {
 	pool, _ := x509.SystemCertPool()
 	ce := credentials.NewClientTLSFromCert(pool, "")
 
@@ -49,7 +57,8 @@ func getGrpcClientConnection(addr string) (*grpc.ClientConn, error) {
 	var err error
 	if isOnCloudRun() {
 		log.Info("retrieving token from metadata server")
-		tokenUrl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", addr)
+		serviceUrl := getServiceUrl(serviceName)
+		tokenUrl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", serviceUrl)
 		token, err = metadata.Get(tokenUrl)
 		if err != nil {
 			return nil, fmt.Errorf("metadata.Get: failed to query id_token: %+v", err)
@@ -63,7 +72,7 @@ func getGrpcClientConnection(addr string) (*grpc.ClientConn, error) {
 	}
 
 	conn, err := grpc.Dial(
-		addr,
+		getServiceAddress(serviceName),
 		grpc.WithTransportCredentials(ce),
 		grpc.WithPerRPCCredentials(tokenAuth{token: token}),
 	)
@@ -73,12 +82,8 @@ func getGrpcClientConnection(addr string) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func getServiceAddress(serviceName string) string {
-	return fmt.Sprintf("%s-4tt23pryoq-an.a.run.app:443", serviceName)
-}
-
 func init() {
-	conn, err := getGrpcClientConnection(getServiceAddress("securities-service"))
+	conn, err := getGrpcClientConnection("securities-service")
 	if err != nil {
 		log.Fatal(err)
 	}
