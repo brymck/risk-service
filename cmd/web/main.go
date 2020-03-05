@@ -50,7 +50,11 @@ func calculateReturns(xs []float64) []float64 {
 	prev := xs[0]
 	for i := 1; i < count; i++ {
 		x := xs[i]
-		results[i-1] = x/prev - 1.0
+		if prev == 0.0 {
+			results[i-1] = 0.0
+		} else {
+			results[i-1] = x/prev - 1.0
+		}
 	}
 	return results
 }
@@ -129,12 +133,18 @@ func normalizeTimeSeries(entries []*sec.Price, start time.Time, end time.Time) [
 	var results []float64
 	i := 0
 	count := len(entries)
+	var lastPrice float64
+	if count == 0 {
+		lastPrice = 0.0
+	} else {
+		lastPrice = entries[count - 1].Price
+	}
 	for d := start; d.After(end) == false; d = d.AddDate(0, 0, 1) {
 		weekday := d.Weekday()
 		if d == start || (weekday != time.Saturday && weekday != time.Sunday) {
 			year, month, day := d.Date()
 			if i >= count {
-				results = append(results, entries[count-1].Price)
+				results = append(results, lastPrice)
 			} else {
 			loop:
 				for {
