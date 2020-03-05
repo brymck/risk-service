@@ -59,7 +59,7 @@ func isExpired(token string) bool {
 	}
 	seconds := int(expiry.Sub(now).Seconds())
 	minutes := seconds / 60
-	seconds = seconds - 60 * minutes
+	seconds = seconds - 60*minutes
 	log.Infof("token is valid for the next %d minutes and %d seconds", minutes, seconds)
 	return false
 }
