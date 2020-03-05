@@ -20,7 +20,7 @@ proto: $(GENPROTO_FILES)
 
 proto/brymck/securities/v1/securities_api.proto:
 	mkdir -p $(dir $@)
-	curl --fail --location --output $@ --silent --show-error https://raw.githubusercontent.com/brymck/securities-service/master/$@
+	curl --fail --location --output $@ --silent --show-error https://$(GITHUB_TOKEN)@raw.githubusercontent.com/brymck/securities-service/master/$@
 
 genproto/%.pb.go: proto/%.proto | .init.stamp
 	mkdir -p $(dir $@)
