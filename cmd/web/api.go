@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"cloud.google.com/go/compute/metadata"
+	jwt "github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -15,33 +16,57 @@ import (
 	sec "github.com/brymck/risk-service/genproto/brymck/securities/v1"
 )
 
-var securitiesApi sec.SecuritiesAPIClient
+var (
+	securitiesApi sec.SecuritiesAPIClient
+	tokenString   string
+)
 
 type tokenAuth struct {
 	serviceName string
 }
 
 func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
-	var token string
+	if tokenString != "" {
+		_, _, err := new(jwt.Parser).ParseUnverified(tokenString, &jwt.StandardClaims{})
+		expired := false
+		switch err.(type) {
+		case *jwt.ValidationError:
+			vErr := err.(*jwt.ValidationError)
+			switch vErr.Errors {
+			case jwt.ValidationErrorExpired:
+				expired = true
+			}
+		}
+
+		if !expired {
+			return map[string]string{
+				"authorization": fmt.Sprintf("Bearer %s", tokenString),
+			}, nil
+		}
+	}
+
+	var newTokenString string
 	var err error
 	if isOnCloudRun() {
 		log.Info("retrieving token from metadata server")
 		serviceUrl := getServiceUrl(t.serviceName)
 		tokenUrl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", serviceUrl)
-		token, err = metadata.Get(tokenUrl)
+		newTokenString, err = metadata.Get(tokenUrl)
 		if err != nil {
 			return nil, fmt.Errorf("metadata.Get: failed to query id_token: %+v", err)
 		}
 	} else {
 		log.Info("retrieving token from BRYMCK_ID_TOKEN environment variable")
-		token = os.Getenv("BRYMCK_ID_TOKEN")
+		newTokenString = os.Getenv("BRYMCK_ID_TOKEN")
 	}
-	if token == "" {
+	if newTokenString == "" {
 		return nil, errors.New("token not set")
 	}
 
+	tokenString = newTokenString
+
 	return map[string]string{
-		"authorization": fmt.Sprintf("Bearer %s", token),
+		"authorization": fmt.Sprintf("Bearer %s", tokenString),
 	}, nil
 }
 
