@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	jwt "github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -25,20 +28,40 @@ type tokenAuth struct {
 	serviceName string
 }
 
+type jwtToken struct {
+	ExpiresAt int64 `json:"exp"`
+}
+
+func isExpired(token string) bool {
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		log.Errorf("no payload found in token")
+		return true
+	}
+	base64Payload := parts[1]
+	jsonPayload, err := base64.RawStdEncoding.DecodeString(base64Payload)
+	if err != nil {
+		log.Error("error decoding payload")
+		return true
+	}
+	fmt.Println(string(jsonPayload))
+	var jt jwtToken
+	err = json.Unmarshal(jsonPayload, &jt)
+	if err != nil {
+		log.Error(err)
+		return true
+	}
+	expiry := time.Unix(jt.ExpiresAt, 0)
+	thirtySecondsFromNow := time.Now().Add(30 * time.Second)
+	if expiry.Before(thirtySecondsFromNow) {
+		return true
+	}
+	return false
+}
+
 func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
 	if tokenString != "" {
-		_, _, err := new(jwt.Parser).ParseUnverified(tokenString, &jwt.StandardClaims{})
-		expired := false
-		switch err.(type) {
-		case *jwt.ValidationError:
-			vErr := err.(*jwt.ValidationError)
-			switch vErr.Errors {
-			case jwt.ValidationErrorExpired:
-				expired = true
-			}
-		}
-
-		if !expired {
+		if !isExpired(tokenString) {
 			return map[string]string{
 				"authorization": fmt.Sprintf("Bearer %s", tokenString),
 			}, nil
