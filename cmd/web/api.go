@@ -46,7 +46,7 @@ func getServiceAddress(serviceName string) string {
 }
 
 func getServiceUrl(serviceName string) string {
-	return fmt.Sprintf("%s-4tt23pryoq-an.a.run.app", serviceName)
+	return fmt.Sprintf("https://%s-4tt23pryoq-an.a.run.app", serviceName)
 }
 
 func getGrpcClientConnection(serviceName string) (*grpc.ClientConn, error) {
