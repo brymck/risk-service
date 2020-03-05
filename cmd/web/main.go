@@ -94,7 +94,7 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 		}
 	}
 
-	log.Info("responding with %d covariance pairs", len(pairs))
+	log.Infof("responding with %d covariance pairs", len(pairs))
 	return &rk.GetCovariancesResponse{Covariances: pairs}, nil
 }
 
