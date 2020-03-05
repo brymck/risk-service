@@ -1,0 +1,89 @@
+name: Build
+
+on:
+  - push
+
+env:
+  PROJECT_ID: ${{ secrets.RUN_PROJECT }}
+  RUN_REGION: ${{ secrets.RUN_REGION }}
+  SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+
+jobs:
+  build-go:
+    name: Build and test Go
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+
+      - name: Install Protocol Buffers
+        run: sudo apt-get install libprotobuf-dev protobuf-compiler
+
+      - name: Cache dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+
+      - name: Run tests and build binary
+        run: env PATH=$PATH:$HOME/go/bin make
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.out
+          fail_ci_if_error: false
+
+  build-gcloud:
+    name: Build container image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+
+      - name: Set up gcloud CLI
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          version: '275.0.0'
+          service_account_email: ${{ secrets.SA_EMAIL }}
+          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+
+      - name: Configure gcloud CLI
+        run: gcloud config set project $PROJECT_ID
+
+      - name: Build and publish image
+        run: gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA
+
+  deploy-gcloud:
+    needs:
+      - build-go
+      - build-gcloud
+    if: github.ref == 'refs/heads/master'
+    name: Deploy container image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+
+      - name: Set up gcloud CLI
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          version: '275.0.0'
+          service_account_email: ${{ secrets.SA_EMAIL }}
+          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+
+      - name: Configure gcloud CLI
+        run: gcloud config set project $PROJECT_ID
+
+      - name: Deploy to Cloud Run
+        run: gcloud run deploy $SERVICE_NAME
+          --region $RUN_REGION
+          --image gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA
+          --platform managed

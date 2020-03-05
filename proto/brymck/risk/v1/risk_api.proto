@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package brymck.risk.v1;
+
+// The risk API
+service RiskAPI {
+    // Get risk
+    rpc GetRisk (GetRiskRequest) returns (GetRiskResponse);
+}
+
+message GetRiskRequest {
+    uint64 securityId = 1;
+}
+
+message GetRiskResponse {
+    double risk = 1;
+}
