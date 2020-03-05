@@ -11,10 +11,12 @@ all: proto test build
 
 init: .init.stamp
 
-.init.stamp: $(PROTO_FILES)
+.init.stamp:
 	go get -u github.com/golang/protobuf/protoc-gen-go
 	go mod download
 	touch $@
+
+dep: $(PROTO_FILES)
 
 proto: $(GENPROTO_FILES)
 
@@ -48,4 +50,4 @@ docker:
 clean:
 	rm -rf proto/alpha_vantage genproto/ .init.stamp profile.out client service
 
-.PHONY: all init proto test build run docker clean
+.PHONY: all init dep proto test build run docker clean
