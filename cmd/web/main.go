@@ -29,7 +29,7 @@ func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk
 	previousPrice := 0.0
 	for _, item := range resp.Prices {
 		if previousPrice != 0.0 {
-			sumOfSquares += item.Price / previousPrice - 1.0
+			sumOfSquares += math.Pow(item.Price / previousPrice - 1.0, 2.0)
 			count++
 		}
 		if item.Price != 0.0 {
