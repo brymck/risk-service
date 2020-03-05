@@ -38,7 +38,8 @@ func calculateCovariance(xs []float64, ys []float64) float64 {
 	for i := 0; i < count; i++ {
 		sumOfSquares += xs[i] * ys[i]
 	}
-	return sumOfSquares / float64(count)
+	annualization := float64(count)
+	return sumOfSquares / float64(count) * annualization * 10000.0
 }
 
 func calculateReturns(xs []float64) []float64 {
@@ -55,6 +56,7 @@ func calculateReturns(xs []float64) []float64 {
 		} else {
 			results[i-1] = x/prev - 1.0
 		}
+		prev = x
 	}
 	return results
 }
@@ -147,7 +149,7 @@ func normalizeTimeSeries(entries []*sec.Price, start time.Time, end time.Time) [
 	if count == 0 {
 		lastPrice = 0.0
 	} else {
-		lastPrice = entries[count - 1].Price
+		lastPrice = entries[count-1].Price
 	}
 	for d := start; d.After(end) == false; d = d.AddDate(0, 0, 1) {
 		weekday := d.Weekday()
@@ -232,7 +234,8 @@ func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk
 		}
 		previousPrice = price
 	}
-	risk := math.Sqrt(sumOfSquares / float64(count))
+	annualization := math.Sqrt(float64(count))
+	risk := math.Sqrt(sumOfSquares/float64(count)) * annualization * 100.0
 	return &rk.GetRiskResponse{Risk: risk}, nil
 }
 

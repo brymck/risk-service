@@ -77,8 +77,8 @@ func getGrpcClientConnection(serviceName string) (*grpc.ClientConn, error) {
 		grpc.WithPerRPCCredentials(tokenAuth{token: token}),
 	)
 	if err != nil {
-			  return nil, err
-			  }
+		return nil, err
+	}
 	return conn, nil
 }
 
