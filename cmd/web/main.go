@@ -110,7 +110,7 @@ func getPrices(ctx context.Context, securityId uint64, start *time.Time, end *ti
 	req := &sec.GetPricesRequest{Id: securityId, StartDate: toProtoDate(start), EndDate: toProtoDate(end)}
 	resp, err := securitiesApi.GetPrices(ctx, req)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	return resp.Prices, nil
 }
