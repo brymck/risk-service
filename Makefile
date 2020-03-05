@@ -11,7 +11,7 @@ all: proto test build
 
 init: .init.stamp
 
-.init.stamp:
+.init.stamp: $(PROTO_FILES)
 	go get -u github.com/golang/protobuf/protoc-gen-go
 	go mod download
 	touch $@
@@ -43,7 +43,7 @@ client: $(GO_FILES) $(GENPROTO_FILES) | .init.stamp
 	go build -ldflags='-w -s' -o client cmd/client/*.go
 
 docker:
-	docker build . --tag gcr.io/$(PROJECT_ID)/$(SERVICE_NAME)
+	docker build --tag gcr.io/$(PROJECT_ID)/$(SERVICE_NAME) .
 
 clean:
 	rm -rf proto/alpha_vantage genproto/ .init.stamp profile.out client service

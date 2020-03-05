@@ -58,6 +58,9 @@ jobs:
       - name: Configure gcloud CLI
         run: gcloud config set project $PROJECT_ID
 
+      - name: Download external Protobuf definitions
+        run: env PATH=$PATH:$HOME/go/bin make init GITHUB_TOKEN=${{ secrets.PRIVATE_REPO_TOKEN }}
+
       - name: Build and publish image
         run: gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA
 

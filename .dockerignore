@@ -16,7 +16,6 @@ README.md
 # Project-specific
 #-----------------------------------------------------------------------------------------------------------------------
 genproto/
-proto/brymck/securities
 .*stamp
 client
 service
