@@ -190,6 +190,10 @@ func latestBusinessDate() time.Time {
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 }
 
+func isoDate(t *time.Time) string {
+	return t.Format("2006-01-02")
+}
+
 func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk.GetRiskResponse, error) {
 	end := latestBusinessDate()
 	start := end.AddDate(-1, 0, 0)
@@ -199,11 +203,17 @@ func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk
 		return nil, err
 	}
 
-	log.Infof("normalizing time series for %d from %s to %s", in.SecurityId, start, end)
+	log.Infof(
+		"normalizing %d time series entries for %d from %s to %s",
+		len(entries),
+		in.SecurityId,
+		isoDate(&start),
+		isoDate(&end),
+	)
 	normalized := normalizeTimeSeries(entries, start, end)
 
-	log.Info("calculating variance of normalized time series")
 	count := len(normalized)
+	log.Info("calculating variance of %d normalized time series entries", count)
 	sumOfSquares := 0.0
 	previousPrice := 0.0
 	for _, price := range normalized {
