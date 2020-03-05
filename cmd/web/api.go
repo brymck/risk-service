@@ -22,6 +22,7 @@ type tokenAuth struct {
 }
 
 func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
+	log.Infof("providing token %s", t.token)
 	return map[string]string{
 		"authorization": fmt.Sprintf("Bearer %s", t.token),
 	}, nil
