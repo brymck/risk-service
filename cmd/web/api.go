@@ -44,7 +44,6 @@ func isExpired(token string) bool {
 		log.Error("error decoding payload")
 		return true
 	}
-	fmt.Println(string(jsonPayload))
 	var jt jwtToken
 	err = json.Unmarshal(jsonPayload, &jt)
 	if err != nil {
