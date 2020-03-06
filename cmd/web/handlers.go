@@ -132,7 +132,7 @@ func (app *application) GetReturnTimeSeries(ctx context.Context, in *rk.GetRetur
 	for i, r := range returnValues {
 		year, month, day := priceDates[i+1].Date()
 		date := &dt.Date{Year: int32(year), Month: int32(month), Day: int32(day)}
-		entries[i] = &rk.ReturnTimeSeriesEntry{Date: date, Return: r}
+		entries[i] = &rk.ReturnTimeSeriesEntry{Date: date, Return: r * 100.0}
 	}
 
 	response = &rk.GetReturnTimeSeriesResponse{Entries: entries}
