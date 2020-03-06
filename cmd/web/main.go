@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/brymck/helpers/servers"
+	"github.com/brymck/helpers/services"
 	log "github.com/sirupsen/logrus"
 
 	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
@@ -23,7 +24,8 @@ const (
 )
 
 var (
-	easternTime *time.Location
+	easternTime   *time.Location
+	securitiesApi = sec.NewSecuritiesAPIClient(services.MustConnect("securities-service"))
 )
 
 type application struct {
