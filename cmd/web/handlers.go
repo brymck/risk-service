@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
-	"github.com/brymck/risk-service/pkg/dates"
 )
 
 func getSecurityIdsKey(ids []uint64) [32]byte {
@@ -27,7 +26,10 @@ func getSecurityIdsKey(ids []uint64) [32]byte {
 func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariancesRequest) (*rk.GetCovariancesResponse, error) {
 	response := &rk.GetCovariancesResponse{}
 
-	end := dates.LatestBusinessDate()
+	end, err := dt.LatestBusinessDate()
+	if err != nil {
+		return nil, err
+	}
 	start := end.AddDate(-1, 0, 0)
 	securityIdsKey := getSecurityIdsKey(in.SecurityIds)
 	endDateText := dt.IsoFormat(end)
@@ -70,7 +72,10 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk.GetRiskResponse, error) {
 	response := &rk.GetRiskResponse{}
 
-	end := dates.LatestBusinessDate()
+	end, err := dt.LatestBusinessDate()
+	if err != nil {
+		return nil, err
+	}
 	start := end.AddDate(-1, 0, 0)
 	endDateText := dt.IsoFormat(end)
 	key := fmt.Sprintf("risk-%d-%s", in.SecurityId, endDateText)
