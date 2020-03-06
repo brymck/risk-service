@@ -109,6 +109,7 @@ func normalizeTimeSeries(entries []*sec.Price, normalizedDates []time.Time) []fl
 					}
 				}
 			}
+			j++
 		}
 	}
 	return results
