@@ -1,6 +1,9 @@
 package main
 
 import (
+	"time"
+
+	"github.com/allegro/bigcache"
 	"github.com/brymck/helpers/servers"
 	"github.com/brymck/helpers/services"
 
@@ -9,11 +12,17 @@ import (
 )
 
 type application struct {
+	cache      *bigcache.BigCache
 	securities sec.SecuritiesAPIClient
 }
 
 func main() {
+	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(10 * time.Minute))
+	if err != nil {
+		panic(err)
+	}
 	app := &application{
+		cache:      cache,
 		securities: sec.NewSecuritiesAPIClient(services.MustConnect("securities-service")),
 	}
 

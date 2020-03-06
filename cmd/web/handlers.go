@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"math"
+	"strconv"
+	"strings"
 
 	dt "github.com/brymck/helpers/dates"
 	log "github.com/sirupsen/logrus"
@@ -11,25 +15,35 @@ import (
 	"github.com/brymck/risk-service/pkg/dates"
 )
 
+func getSecurityIdsKey(ids []uint64) [32]byte {
+	var builder strings.Builder
+	for _, id := range ids {
+		builder.WriteString(strconv.FormatUint(id, 16))
+		builder.WriteString("-")
+	}
+	return sha256.Sum256([]byte(builder.String()))
+}
+
 func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariancesRequest) (*rk.GetCovariancesResponse, error) {
+	response := &rk.GetCovariancesResponse{}
+
 	end := dates.LatestBusinessDate()
 	start := end.AddDate(-1, 0, 0)
+	securityIdsKey := getSecurityIdsKey(in.SecurityIds)
+	endDateText := dt.IsoFormat(end)
+	key := fmt.Sprintf("covariances-%d-%s", securityIdsKey, endDateText)
+
+	if err := app.getCache(key, response); err == nil {
+		return response, nil
+	}
 
 	securityIds := in.SecurityIds
 	timeSeries := make(map[uint64][]float64, len(securityIds))
 	for _, securityId := range securityIds {
-		log.Debugf("getting prices for %d", securityId)
 		entries, err := app.getPrices(ctx, securityId, start, end)
 		if err != nil {
 			return nil, err
 		}
-		log.Debugf(
-			"normalizing %d time series entries for %d from %s to %s",
-			len(entries),
-			securityId,
-			dt.IsoFormat(start),
-			dt.IsoFormat(end),
-		)
 		timeSeries[securityId] = calculateReturns(normalizeTimeSeries(entries, start, end))
 	}
 
@@ -48,28 +62,33 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 		}
 	}
 
-	log.Debugf("responding with %d covariance pairs", len(pairs))
-	return &rk.GetCovariancesResponse{Covariances: pairs}, nil
+	response = &rk.GetCovariancesResponse{Covariances: pairs}
+	_ = app.setCache(key, response)
+	return response, nil
 }
 
 func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk.GetRiskResponse, error) {
+	response := &rk.GetRiskResponse{}
+
 	end := dates.LatestBusinessDate()
 	start := end.AddDate(-1, 0, 0)
-	log.Debugf("getting prices for %d", in.SecurityId)
+	endDateText := dt.IsoFormat(end)
+	key := fmt.Sprintf("risk-%d-%s", in.SecurityId, endDateText)
+
+	if err := app.getCache(key, response); err == nil {
+		return response, nil
+	}
+
 	entries, err := app.getPrices(ctx, in.SecurityId, start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf(
-		"normalizing %d time series entries for %d from %s to %s",
-		len(entries),
-		in.SecurityId,
-		dt.IsoFormat(start),
-		dt.IsoFormat(end),
-	)
 	timeSeries := calculateReturns(normalizeTimeSeries(entries, start, end))
 	covariance := calculateCovariance(timeSeries, timeSeries)
 	risk := math.Sqrt(covariance)
-	return &rk.GetRiskResponse{Risk: risk}, nil
+
+	response = &rk.GetRiskResponse{Risk: risk}
+	_ = app.setCache(key, response)
+	return response, nil
 }
