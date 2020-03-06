@@ -1,4 +1,4 @@
-PROTOS := brymck/securities/v1/securities_api
+PROTOS := brymck/dates/v1/date brymck/securities/v1/securities_api
 
 PROJECT_ID = $(shell gcloud config get-value project)
 SERVICE_NAME := $(notdir $(CURDIR))
@@ -18,7 +18,13 @@ init: .init.stamp
 
 dep: $(PROTO_FILES)
 
-proto: $(GENPROTO_FILES)
+proto: $(PROTO_FILES) $(GENPROTO_FILES)
+
+proto/brymck/dates/v1/date.proto:
+	mkdir -p $(dir $@)
+	curl --fail --location --output $@ --silent --show-error https://raw.githubusercontent.com/brymck/protos/master/brymck/dates/v1/date.proto
+	echo >> $@
+	echo 'option go_package = "github.com/brymck/risk-service/genproto/brymck/dates/v1";' >> $@
 
 proto/brymck/securities/v1/securities_api.proto:
 	mkdir -p $(dir $@)
@@ -26,7 +32,7 @@ proto/brymck/securities/v1/securities_api.proto:
 
 genproto/%.pb.go: proto/%.proto | .init.stamp
 	mkdir -p $(dir $@)
-	protoc -Iproto -I$(PROTO_PATH) --go_out=plugins=grpc:genproto $<
+	protoc -Iproto -I$(PROTO_PATH) --go_out=paths=source_relative,plugins=grpc:genproto $<
 
 test: profile.out
 
@@ -48,6 +54,6 @@ docker: $(PROTO_FILES)
 	docker build --tag gcr.io/$(PROJECT_ID)/$(SERVICE_NAME) .
 
 clean:
-	rm -rf proto/alpha_vantage genproto/ .init.stamp profile.out client service
+	rm -rf proto/brymck/dates proto/brymck/securities genproto/ .init.stamp profile.out client service
 
 .PHONY: all init dep proto test build run docker clean

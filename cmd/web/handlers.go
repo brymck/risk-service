@@ -8,9 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	dt "github.com/brymck/helpers/dates"
+	"github.com/brymck/helpers/dates"
 	log "github.com/sirupsen/logrus"
 
+	dt "github.com/brymck/risk-service/genproto/brymck/dates/v1"
 	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
 )
 
@@ -26,13 +27,13 @@ func getSecurityIdsKey(ids []uint64) [32]byte {
 func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariancesRequest) (*rk.GetCovariancesResponse, error) {
 	response := &rk.GetCovariancesResponse{}
 
-	end, err := dt.LatestBusinessDate()
+	end, err := dates.LatestBusinessDate()
 	if err != nil {
 		return nil, err
 	}
 	start := end.AddDate(-1, 0, 0)
 	securityIdsKey := getSecurityIdsKey(in.SecurityIds)
-	endDateText := dt.IsoFormat(end)
+	endDateText := dates.IsoFormat(end)
 	key := fmt.Sprintf("covariances-%d-%s", securityIdsKey, endDateText)
 
 	if err := app.getCache(key, response); err == nil {
@@ -72,12 +73,12 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk.GetRiskResponse, error) {
 	response := &rk.GetRiskResponse{}
 
-	end, err := dt.LatestBusinessDate()
+	end, err := dates.LatestBusinessDate()
 	if err != nil {
 		return nil, err
 	}
 	start := end.AddDate(-1, 0, 0)
-	endDateText := dt.IsoFormat(end)
+	endDateText := dates.IsoFormat(end)
 	key := fmt.Sprintf("risk-%d-%s", in.SecurityId, endDateText)
 
 	if err := app.getCache(key, response); err == nil {
@@ -94,6 +95,40 @@ func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk
 	risk := math.Sqrt(covariance)
 
 	response = &rk.GetRiskResponse{Risk: risk}
+	_ = app.setCache(key, response)
+	return response, nil
+}
+
+func (app *application) GetReturnTimeSeries(ctx context.Context, in *rk.GetReturnTimeSeriesRequest) (*rk.GetReturnTimeSeriesResponse, error) {
+	response := &rk.GetReturnTimeSeriesResponse{}
+
+	end, err := dates.LatestBusinessDate()
+	if err != nil {
+		return nil, err
+	}
+	start := end.AddDate(-1, 0, 0)
+	endDateText := dates.IsoFormat(end)
+	key := fmt.Sprintf("returns-%d-%s", in.SecurityId, endDateText)
+
+	if err := app.getCache(key, response); err == nil {
+		return response, nil
+	}
+
+	priceEntries, err := app.getPrices(ctx, in.SecurityId, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	returnDates := normalizeDates(start, end)
+	returnValues := calculateReturns(normalizeTimeSeries(priceEntries, start, end))
+	entries := make([]*rk.ReturnTimeSeriesEntry, len(returnValues))
+	for i, r := range returnValues {
+		year, month, day := returnDates[i].Date()
+		date := &dt.Date{Year: int32(year), Month: int32(month), Day: int32(day)}
+		entries[i] = &rk.ReturnTimeSeriesEntry{Date: date, Return: r}
+	}
+
+	response = &rk.GetReturnTimeSeriesResponse{Entries: entries}
 	_ = app.setCache(key, response)
 	return response, nil
 }

@@ -39,6 +39,17 @@ func calculateReturns(xs []float64) []float64 {
 	return results
 }
 
+func normalizeDates(start time.Time, end time.Time) []time.Time {
+	var results []time.Time
+	for d := start; d.After(end) == false; d = d.AddDate(0, 0, 1) {
+		weekday := d.Weekday()
+		if d == start || (weekday != time.Saturday && weekday != time.Sunday) {
+			results = append(results, d)
+		}
+	}
+	return results
+}
+
 func normalizeTimeSeries(entries []*sec.Price, start time.Time, end time.Time) []float64 {
 	var results []float64
 	i := 0
