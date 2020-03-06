@@ -13,6 +13,7 @@ import (
 
 	dt "github.com/brymck/risk-service/genproto/brymck/dates/v1"
 	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
+	dates2 "github.com/brymck/risk-service/pkg/dates"
 )
 
 func getSecurityIdsKey(ids []uint64) [32]byte {
@@ -40,6 +41,9 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 		return response, nil
 	}
 
+	freq := dates2.ToFrequency(in.Frequency)
+	priceDates := normalizeDates(start, end, freq)
+
 	securityIds := in.SecurityIds
 	timeSeries := make(map[uint64][]float64, len(securityIds))
 	for _, securityId := range securityIds {
@@ -47,7 +51,7 @@ func (app *application) GetCovariances(ctx context.Context, in *rk.GetCovariance
 		if err != nil {
 			return nil, err
 		}
-		timeSeries[securityId] = calculateReturns(normalizeTimeSeries(entries, start, end))
+		timeSeries[securityId] = calculateReturns(normalizeTimeSeries(entries, priceDates))
 	}
 
 	log.Debugf("calculating covariances")
@@ -90,7 +94,9 @@ func (app *application) GetRisk(ctx context.Context, in *rk.GetRiskRequest) (*rk
 		return nil, err
 	}
 
-	timeSeries := calculateReturns(normalizeTimeSeries(entries, start, end))
+	freq := dates2.ToFrequency(in.Frequency)
+	priceDates := normalizeDates(start, end, freq)
+	timeSeries := calculateReturns(normalizeTimeSeries(entries, priceDates))
 	covariance := calculateCovariance(timeSeries, timeSeries)
 	risk := math.Sqrt(covariance)
 
@@ -119,11 +125,12 @@ func (app *application) GetReturnTimeSeries(ctx context.Context, in *rk.GetRetur
 		return nil, err
 	}
 
-	returnDates := normalizeDates(start, end)
-	returnValues := calculateReturns(normalizeTimeSeries(priceEntries, start, end))
+	freq := dates2.ToFrequency(in.Frequency)
+	priceDates := normalizeDates(start, end, freq)
+	returnValues := calculateReturns(normalizeTimeSeries(priceEntries, priceDates))
 	entries := make([]*rk.ReturnTimeSeriesEntry, len(returnValues))
 	for i, r := range returnValues {
-		year, month, day := returnDates[i].Date()
+		year, month, day := priceDates[i+1].Date()
 		date := &dt.Date{Year: int32(year), Month: int32(month), Day: int32(day)}
 		entries[i] = &rk.ReturnTimeSeriesEntry{Date: date, Return: r}
 	}

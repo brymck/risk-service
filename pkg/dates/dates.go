@@ -3,15 +3,19 @@ package dates
 import (
 	"time"
 
+	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
 	sec "github.com/brymck/risk-service/genproto/brymck/securities/v1"
 )
 
 type DateComparisonResult string
+type Frequency string
 
 const (
-	Before DateComparisonResult = "Before"
-	Equal  DateComparisonResult = "Equal"
-	After  DateComparisonResult = "After"
+	Before  DateComparisonResult = "Before"
+	Equal   DateComparisonResult = "Equal"
+	After   DateComparisonResult = "After"
+	Daily   Frequency            = "Daily"
+	Monthly Frequency            = "Monthly"
 )
 
 func ToProtoDate(t time.Time) *sec.Date {
@@ -36,4 +40,13 @@ func Compare(d *sec.Date, year int, month time.Month, day int) DateComparisonRes
 		}
 	}
 	return After
+}
+
+func ToFrequency(freq rk.Frequency) Frequency {
+	switch freq.String() {
+	case "FREQUENCY_MONTHLY":
+		return Monthly
+	default:
+		return Daily
+	}
 }

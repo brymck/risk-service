@@ -4,6 +4,12 @@ package brymck.risk.v1;
 
 import "brymck/dates/v1/date.proto";
 
+enum Frequency {
+    FREQUENCY_INVALID = 0;
+    FREQUENCY_DAILY = 1;
+    FREQUENCY_MONTHLY = 2;
+}
+
 // The risk API
 service RiskAPI {
     // Get risk
@@ -18,6 +24,8 @@ service RiskAPI {
 
 message GetRiskRequest {
     uint64 securityId = 1;
+
+    Frequency frequency = 2;
 }
 
 message GetRiskResponse {
@@ -26,6 +34,8 @@ message GetRiskResponse {
 
 message GetCovariancesRequest {
     repeated uint64 securityIds = 1;
+
+    Frequency frequency = 2;
 }
 
 message GetCovariancesResponse {
@@ -42,6 +52,8 @@ message CovariancePair {
 
 message GetReturnTimeSeriesRequest {
     uint64 securityId = 1;
+
+    Frequency frequency = 2;
 }
 
 message GetReturnTimeSeriesResponse {
