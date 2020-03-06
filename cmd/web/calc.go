@@ -102,9 +102,11 @@ func normalizeTimeSeries(entries []*sec.Price, normalizedDates []time.Time) []fl
 					case dates.Before:
 						i++
 						if i >= count {
+							results[j] = results[j-1]
 							break loop
 						}
 					case dates.After:
+						results[j] = results[j-1]
 						break loop
 					}
 				}
