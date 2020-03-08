@@ -20,6 +20,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/allegro/bigcache v1.2.1 h1:hg1sY1raCwic3Vnsvje6TT7/pnZba83LeFck5NrFKSc=
 github.com/allegro/bigcache v1.2.1/go.mod h1:Cb/ax3seSYIx7SuZdm2G2xzfwmv3TPSk2ucNfQESPXM=
+github.com/brymck/genproto v0.0.0-20200308171659-498ebc209346 h1:d+dpTwR0t48QlVyrW201SN9ugg2CLFWDkdtxaSYAVQ0=
+github.com/brymck/genproto v0.0.0-20200308171659-498ebc209346/go.mod h1:8i+Ulugidt0csnkd0pcaMv/zdQ05cr+nOijF1b1jUxM=
 github.com/brymck/helpers v0.0.0-20200306105445-1f94f6069fc4 h1:83AmnMe0PDytxbS5630KsiCtBwvA5Gpb4/5g9uyPMaI=
 github.com/brymck/helpers v0.0.0-20200306105445-1f94f6069fc4/go.mod h1:TavkBEpkR3owp7CUFxTRblXDMlU964upJ2ff86Cv0l4=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=

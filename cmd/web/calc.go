@@ -3,7 +3,8 @@ package main
 import (
 	"time"
 
-	sec "github.com/brymck/risk-service/genproto/brymck/securities/v1"
+	sec "github.com/brymck/genproto/brymck/securities/v1"
+
 	"github.com/brymck/risk-service/pkg/dates"
 )
 

@@ -1,59 +1,32 @@
-PROTOS := brymck/dates/v1/date brymck/securities/v1/securities_api
-
 PROJECT_ID = $(shell gcloud config get-value project)
 SERVICE_NAME := $(notdir $(CURDIR))
 GO_FILES := $(shell find . -name '*.go')
-PROTO_FILES := $(shell find proto -name '*.proto' 2>/dev/null) $(foreach proto,$(PROTOS),proto/$(proto).proto)
-PROTO_PATH := /usr/local/include
-GENPROTO_FILES := $(patsubst proto/%.proto,genproto/%.pb.go,$(PROTO_FILES))
 
-all: proto test build
-
-init: .init.stamp
-
-.init.stamp:
-	go get -u github.com/golang/protobuf/protoc-gen-go
-	go mod download
-	touch $@
-
-dep: $(PROTO_FILES)
-
-proto: $(PROTO_FILES) $(GENPROTO_FILES)
-
-proto/brymck/dates/v1/date.proto:
-	mkdir -p $(dir $@)
-	curl --fail --location --output $@ --silent --show-error https://raw.githubusercontent.com/brymck/protos/master/brymck/dates/v1/date.proto
-	echo >> $@
-	echo 'option go_package = "github.com/brymck/risk-service/genproto/brymck/dates/v1";' >> $@
-
-proto/brymck/securities/v1/securities_api.proto:
-	mkdir -p $(dir $@)
-	curl --fail --location --output $@ --silent --show-error https://$(GITHUB_TOKEN)@raw.githubusercontent.com/brymck/securities-service/master/$@
-
-genproto/%.pb.go: proto/%.proto | .init.stamp
-	mkdir -p $(dir $@)
-	protoc -Iproto -I$(PROTO_PATH) --go_out=paths=source_relative,plugins=grpc:genproto $<
+all: test build
 
 test: profile.out
 
-profile.out: $(GO_FILES) $(GENPROTO_FILES) | .init.stamp
+profile.out: $(GO_FILES)
+	go mod download
 	go test -race -coverprofile=profile.out -covermode=atomic ./...
 
 build: service
 
-service: $(GO_FILES) $(GENPROTO_FILES) | .init.stamp
+service: $(GO_FILES)
+	go mod download
 	go build -ldflags='-w -s' -o service cmd/web/*.go
 
 run: service
 	./service
 
-client: $(GO_FILES) $(GENPROTO_FILES) | .init.stamp
+client: $(GO_FILES)
+	go mod download
 	go build -ldflags='-w -s' -o client cmd/client/*.go
 
-docker: $(PROTO_FILES)
+docker: $(GO_FILES)
 	docker build --tag gcr.io/$(PROJECT_ID)/$(SERVICE_NAME) .
 
 clean:
-	rm -rf proto/brymck/dates proto/brymck/securities genproto/ .init.stamp profile.out client service
+	rm -rf profile.out service
 
-.PHONY: all init dep proto test build run docker clean
+.PHONY: all test build run docker clean

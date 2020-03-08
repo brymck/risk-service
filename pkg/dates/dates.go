@@ -3,8 +3,8 @@ package dates
 import (
 	"time"
 
-	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
-	sec "github.com/brymck/risk-service/genproto/brymck/securities/v1"
+	dt "github.com/brymck/genproto/brymck/dates/v1"
+	rk "github.com/brymck/genproto/brymck/risk/v1"
 )
 
 type DateComparisonResult string
@@ -18,11 +18,11 @@ const (
 	Monthly Frequency            = "Monthly"
 )
 
-func ToProtoDate(t time.Time) *sec.Date {
-	return &sec.Date{Year: int32(t.Year()), Month: int32(t.Month()), Day: int32(t.Day())}
+func ToProtoDate(t time.Time) *dt.Date {
+	return &dt.Date{Year: int32(t.Year()), Month: int32(t.Month()), Day: int32(t.Day())}
 }
 
-func Compare(d *sec.Date, year int, month time.Month, day int) DateComparisonResult {
+func Compare(d *dt.Date, year int, month time.Month, day int) DateComparisonResult {
 	year32 := int32(year)
 	if d.Year < year32 {
 		return Before

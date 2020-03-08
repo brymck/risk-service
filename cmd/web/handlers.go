@@ -11,8 +11,8 @@ import (
 	"github.com/brymck/helpers/dates"
 	log "github.com/sirupsen/logrus"
 
-	dt "github.com/brymck/risk-service/genproto/brymck/dates/v1"
-	rk "github.com/brymck/risk-service/genproto/brymck/risk/v1"
+	dt "github.com/brymck/genproto/brymck/dates/v1"
+	rk "github.com/brymck/genproto/brymck/risk/v1"
 	dates2 "github.com/brymck/risk-service/pkg/dates"
 )
 
